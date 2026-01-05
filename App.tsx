@@ -6,8 +6,8 @@ import UserManagement from './components/UserManagement';
 import ElevatorManagement from './components/ElevatorManagement';
 import AIInsights from './components/AIInsights';
 import { INITIAL_USERS, INITIAL_ELEVATORS, MOCK_LOGS } from './constants';
-import { User, Elevator, AccessLog, AccessResult } from './types';
-import { Search, Filter, Download } from 'lucide-react';
+import { User, Elevator, AccessLog, AccessResult, UserType, ElevatorMode } from './types';
+import { Search, Filter, Download, Plus, X } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -16,9 +16,11 @@ const App: React.FC = () => {
   const [elevators, setElevators] = useState<Elevator[]>(INITIAL_ELEVATORS);
   const [logs, setLogs] = useState<AccessLog[]>(MOCK_LOGS);
 
-  // Simulate real-time logs
+  // Simulation of real-time logs
   useEffect(() => {
     const interval = setInterval(() => {
+      if (users.length === 0 || elevators.length === 0) return;
+      
       const randomUser = users[Math.floor(Math.random() * users.length)];
       const randomElevator = elevators[Math.floor(Math.random() * elevators.length)];
       const result = Math.random() > 0.1 ? AccessResult.ALLOW : AccessResult.DENY;
@@ -35,10 +37,44 @@ const App: React.FC = () => {
       };
 
       setLogs(prev => [newLog, ...prev.slice(0, 49)]);
-    }, 15000); // New log every 15s
+    }, 20000);
 
     return () => clearInterval(interval);
   }, [users, elevators]);
+
+  // CRUD Handlers for Users
+  const handleAddUser = (user: User) => setUsers([...users, user]);
+  const handleUpdateUser = (updatedUser: User) => setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+  const handleDeleteUser = (id: string) => setUsers(users.filter(u => u.id !== id));
+
+  // CRUD Handlers for Elevators
+  const handleAddElevator = (elevator: Elevator) => setElevators([...elevators, elevator]);
+  const handleUpdateElevator = (updatedElevator: Elevator) => setElevators(elevators.map(e => e.id === updatedElevator.id ? updatedElevator : e));
+  const handleDeleteElevator = (id: string) => setElevators(elevators.filter(e => e.id !== id));
+
+  // Export to CSV (Excel compatible)
+  const exportLogs = () => {
+    const headers = ["ID", "Thời gian", "Người dùng", "Thang máy", "Tầng", "Phương thức", "Kết quả"];
+    const csvData = logs.map(log => [
+      log.id,
+      new Date(log.timestamp).toLocaleString(),
+      log.userName,
+      log.elevatorName,
+      log.floor,
+      log.method,
+      log.result
+    ]);
+
+    const csvContent = "\uFEFF" + [headers, ...csvData].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `EAMS_Logs_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -50,9 +86,9 @@ const App: React.FC = () => {
           </div>
         );
       case 'users':
-        return <UserManagement users={users} />;
+        return <UserManagement users={users} onAdd={handleAddUser} onUpdate={handleUpdateUser} onDelete={handleDeleteUser} />;
       case 'elevators':
-        return <ElevatorManagement elevators={elevators} />;
+        return <ElevatorManagement elevators={elevators} onAdd={handleAddElevator} onUpdate={handleUpdateElevator} onDelete={handleDeleteElevator} />;
       case 'logs':
         return (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -66,13 +102,12 @@ const App: React.FC = () => {
                 />
               </div>
               <div className="flex items-center space-x-3">
-                <button className="flex items-center space-x-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 font-medium transition-colors border border-gray-200">
-                  <Filter size={18} />
-                  <span>Filters</span>
-                </button>
-                <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors">
+                <button 
+                  onClick={exportLogs}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors"
+                >
                   <Download size={18} />
-                  <span>Export</span>
+                  <span>{language === 'VN' ? 'Xuất Excel' : 'Export Excel'}</span>
                 </button>
               </div>
             </div>
@@ -148,7 +183,6 @@ const App: React.FC = () => {
   );
 };
 
-// Simple icon for placeholder screens
 import { AlertCircle } from 'lucide-react';
 
 export default App;
