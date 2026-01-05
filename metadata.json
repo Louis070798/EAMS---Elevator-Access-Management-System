@@ -1,0 +1,7 @@
+{
+  "name": "EAMS - Elevator Access Management System",
+  "description": "A comprehensive elevator access management platform featuring user distribution, floor permissions, real-time monitoring, and AI-driven security insights.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
